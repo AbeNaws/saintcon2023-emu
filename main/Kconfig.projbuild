@@ -2,7 +2,7 @@ menu "ESP BOX EMU Configuration"
 
     choice
         prompt "Rom Storage Configuration"
-        default ROM_STORAGE_SDCARD
+        default ROM_STORAGE_LITTLEFS
         help
             Select the storage you want to use for Roms.
         config ROM_STORAGE_LITTLEFS

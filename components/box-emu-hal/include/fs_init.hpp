@@ -14,5 +14,7 @@
 #include "sdmmc_cmd.h"
 #define MOUNT_POINT "/sdcard"
 #endif
+#define SAVE_DIR "/saves/"
+#define FULL_SAVE_DIR MOUNT_POINT SAVE_DIR
 
 void fs_init();
