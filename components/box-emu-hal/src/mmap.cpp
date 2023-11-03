@@ -1,6 +1,5 @@
 #include "mmap.hpp"
 #include "esp_heap_caps.h"
-#include "esp_littlefs.h"
 #include "esp_psram.h"
 
 const esp_partition_t* cart_partition;
@@ -23,12 +22,12 @@ size_t copy_romdata_to_cart_partition(const std::string& rom_filename) {
   }
   // allocate memory for the ROM and make sure it's on the SPIRAM
   size_t filesize = romfile.tellg(); // get size from current file pointer location;
-  fmt::print("Allocated {} bytes for ROM\n", filesize);
   romdata = (uint8_t*)heap_caps_malloc(filesize, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
   if (romdata == nullptr) {
-      fmt::print(fg(fmt::terminal_color::red), "ERROR: Couldn't allocate memory for ROM!\n");
+      fmt::print(fg(fmt::terminal_color::red), "ERROR: Couldn't allocate {} bytes memory for ROM!\n", filesize);
       return 0;
   }
+  fmt::print("Allocated {} bytes for ROM\n", filesize);
   romfile.seekg(0, std::ios::beg); //reset file pointer to beginning;
   romfile.read((char*)(romdata), filesize);
   romfile.close();

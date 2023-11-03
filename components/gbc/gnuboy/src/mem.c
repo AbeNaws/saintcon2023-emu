@@ -18,6 +18,8 @@ struct mbc mbc;
 struct rom rom;
 struct ram ram;
 
+int (*sram_save_callback)();
+
 /*
  * In order to make reads and writes efficient, we keep tables
  * (indexed by the high nibble of the address) specifying which
@@ -335,6 +337,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 		switch (ha & 0xE)
 		{
 			case 0x0:
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 			case 0x2:
@@ -358,6 +363,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 	case MBC_MBC2: /* is this at all right? */
 		if ((a & 0x0100) == 0x0000)
 		{
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 		}
@@ -372,6 +380,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 		switch (ha & 0xE)
 		{
 			case 0x0:
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 			case 0x2:
@@ -404,6 +415,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 		{
 			case 0x0:
 			case 0x1:
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 			case 0x2:
@@ -428,6 +442,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 		switch (ha & 0xE)
 		{
 			case 0x0:
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 			case 0x2:
@@ -452,6 +469,9 @@ void IRAM_ATTR mbc_write(int a, byte b)
 		switch (ha & 0xE)
 		{
 			case 0x0:
+			if(mbc.enableram && !((b & 0x0F) == 0x0A) && ram.sram_save_dirty) {
+				sram_save_callback();
+			}
 			mbc.enableram = ((b & 0x0F) == 0x0A);
 			break;
 			case 0x2:
@@ -519,6 +539,12 @@ void IRAM_ATTR mem_write(int a, byte b)
 		__asm__("memw");
 
 		ram.sram_dirty = 1;
+		if (mbc.rambank >= 1) {
+			// can we always assume saves are in nonzero banks?
+			// tested Pokemon yellow so far
+			ram.sram_save_dirty = 1;
+			//printf("mem_write sav: bank=%d, sram %p=0x%d\n", mbc.rambank, (void*)(a), b);
+		}
 		//printf("mem_write: bank=%d, sram %p=0x%d\n", mbc.rambank, (void*)(a & 0x1fff), b);
 		//printf("mem_write: check - write=0x%x, read=0x%x\n", b, ram.sbank[mbc.rambank][a & 0x1FFF]);
 		break;
@@ -632,4 +658,8 @@ void mbc_reset()
 	mbc.rambank = 0;
 	mbc.enableram = 0;
 	mem_updatemap();
+}
+
+void register_sram_save_callback(int (*cb)()) {
+	sram_save_callback = cb;
 }

@@ -42,6 +42,7 @@ struct ram
 	byte (*sbank)[8192];
 	byte loaded;
 	byte sram_dirty;
+	byte sram_save_dirty;
 };
 
 
@@ -56,7 +57,7 @@ void mbc_write(int a, byte b);
 void mem_write(int a, byte b);
 byte mem_read(int a);
 void mbc_reset();
-
+void register_sram_save_callback(int (*cb)());
 
 #define READB(a) ( mbc.rmap[(a)>>12] \
 ? mbc.rmap[(a)>>12][(a)] \

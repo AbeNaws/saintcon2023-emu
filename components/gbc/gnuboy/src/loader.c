@@ -18,6 +18,8 @@
 #include "gnuboy/rtc.h"
 #include "gnuboy/sound.h"
 
+#include "fs_init.h"
+
 static int mbc_table[256] =
 {
 	0, 1, 1, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3,
@@ -104,6 +106,7 @@ static void initmem(void *mem, int size)
 static byte *inf_buf;
 static int inf_pos, inf_len;
 // static byte *_data_ptr = NULL;
+const size_t sram_save_size = 4096;
 
 int rom_load(uint8_t *rom_data, size_t rom_data_size)
 {
@@ -232,31 +235,28 @@ int sram_load()
 	/* Consider sram loaded at this point, even if file doesn't exist */
 	ram.loaded = 1;
 
-	/*
-	const esp_partition_t* part;
-	spi_flash_mmap_handle_t hrom;
-	esp_err_t err;
+	// load SRAM from file in littlefs
+	char filename[31];
+	strcpy(filename, SAVE_DIR "/");
+	strcat(filename, rom.name);
+	strcat(filename, ".sav");
+	FILE *save;
 
-	part=esp_partition_find_first(0x40, 2, NULL);
-	if (part==0)
-	{
-		printf("esp_partition_find_first (save) failed.\n");
-		//abort();
+	printf("checking sram save at %s\n", filename);
+	save = fopen(filename, "rb");
+	if(save == NULL) {
+		printf("unable to open %s for reading\n", filename);
+		return -2;
 	}
-	else
-	{
-		err = esp_partition_read(part, 0, ram.sbank, mbc.ramsize * 8192);
-		if (err != ESP_OK)
-		{
-			printf("esp_partition_read failed. (%d)\n", err);
-		}
-		else
-		{
-			printf("sram_load: sram load OK.\n");
-			ram.sram_dirty = 0;
-		}
-	}*/
 
+	// because littleFS blocks are half the size of the sram banks, we need to 
+	// run double the copy operations
+	size_t read = fread(ram.sbank, sram_save_size, mbc.ramsize * 2, save);
+	printf("read %d bytes from %s\n", read * sram_save_size, filename);
+	fclose(save);
+
+	ram.sram_dirty = 0;
+	ram.sram_save_dirty = 0;
 	return 0;
 }
 
@@ -267,36 +267,29 @@ int sram_save()
 	if (!mbc.batt || !ram.loaded || !mbc.ramsize)
 		return -1;
 
-	/*const esp_partition_t* part;
-	spi_flash_mmap_handle_t hrom;
-	esp_err_t err;
+	// save SRAM to file in littlefs
+	// TODO don't hardcode save directory
+	char filename[31];
+	strcpy(filename, SAVE_DIR "/");
+	strcat(filename, rom.name);
+	strcat(filename, ".sav");
+	FILE *save;
 
-	part=esp_partition_find_first(0x40, 2, NULL);
-	if (part==0)
-	{
-		printf("esp_partition_find_first (save) failed.\n");
-		//abort();
+	printf("saving sram to %s\n", filename);
+	save = fopen(filename, "wb");
+	if(save == NULL) {
+		printf("Error: unable to open %s for writing\n", filename);
+		return -2;
 	}
-	else
-	{
-		err = esp_partition_erase_range(part, 0, mbc.ramsize * 8192);
-		if (err!=ESP_OK)
-		{
-			printf("esp_partition_erase_range failed. (%d)\n", err);
-			abort();
-		}
+	
+	// because littleFS blocks are half the size of the sram banks, we need to 
+	// run double the copy operations
+	size_t written = fwrite(ram.sbank, sram_save_size, mbc.ramsize * 2, save);
+	printf("wrote %d bytes to %s\n", written * sram_save_size, filename);
+	fclose(save);
 
-		err = esp_partition_write(part, 0, ram.sbank, mbc.ramsize * 8192);
-		if (err != ESP_OK)
-		{
-			printf("esp_partition_write failed. (%d)\n", err);
-		}
-		else
-		{
-				printf("sram_load: sram save OK.\n");
-		}
-	}*/
-
+	ram.sram_dirty = 0;
+	ram.sram_save_dirty = 0;
 	return 0;
 }
 
@@ -367,4 +360,6 @@ void loader_init(uint8_t *romptr, size_t rom_size)
 {
 	rom_load(romptr, rom_size);
 	rtc_load();
+	sram_load();
+	register_sram_save_callback(sram_save);
 }
