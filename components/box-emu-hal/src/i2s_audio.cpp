@@ -19,7 +19,6 @@
 
 #include "hal_events.hpp"
 
-#include "es7210.h"
 #include "es8311.h"
 
 /**
@@ -57,9 +56,9 @@ int16_t *get_audio_buffer() {
 
 void update_volume_output() {
   if (muted_) {
-    es8311_codec_set_voice_volume(0);
+    //es8311_codec_set_voice_volume(0);
   } else {
-    es8311_codec_set_voice_volume(volume_);
+    //es8311_codec_set_voice_volume(volume_);
   }
 }
 
@@ -112,32 +111,6 @@ static esp_err_t i2s_driver_init(void)
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
   ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
   ESP_ERROR_CHECK(i2s_channel_enable(rx_handle));
-  return ret_val;
-}
-
-// es7210 is for audio input codec
-static esp_err_t es7210_init_default(void)
-{
-  printf("initializing es7210 codec...\n");
-  esp_err_t ret_val = ESP_OK;
-  audio_hal_codec_config_t cfg;
-  memset(&cfg, 0, sizeof(cfg));
-  cfg.codec_mode = AUDIO_HAL_CODEC_MODE_ENCODE;
-  cfg.adc_input = AUDIO_HAL_ADC_INPUT_ALL;
-  cfg.i2s_iface.bits = AUDIO_HAL_BIT_LENGTH_16BITS;
-  cfg.i2s_iface.fmt = AUDIO_HAL_I2S_NORMAL;
-  cfg.i2s_iface.mode = AUDIO_HAL_MODE_SLAVE;
-  cfg.i2s_iface.samples = AUDIO_HAL_16K_SAMPLES;
-  ret_val |= es7210_adc_init(&cfg);
-  ret_val |= es7210_adc_config_i2s(cfg.codec_mode, &cfg.i2s_iface);
-  ret_val |= es7210_adc_set_gain((es7210_input_mics_t)(ES7210_INPUT_MIC1 | ES7210_INPUT_MIC2), GAIN_37_5DB);
-  ret_val |= es7210_adc_set_gain((es7210_input_mics_t)(ES7210_INPUT_MIC3 | ES7210_INPUT_MIC4), GAIN_0DB);
-  ret_val |= es7210_adc_ctrl_state(cfg.codec_mode, AUDIO_HAL_CTRL_START);
-
-  if (ESP_OK != ret_val) {
-    printf("Failed initialize codec\n");
-  }
-
   return ret_val;
 }
 
@@ -231,6 +204,9 @@ static void init_mute_button(void) {
 static bool initialized = false;
 void audio_init() {
   if (initialized) return;
+  espp::EventManager::get().add_publisher(mute_button_topic, "i2s_audio");
+  return;
+
   auto pwr_ctl = GPIO_NUM_46;
 
   /* Config power control IO */
@@ -253,7 +229,6 @@ void audio_init() {
   gpio_set_level(pwr_ctl, 1);
 
   i2s_driver_init();
-  es7210_init_default();
   es8311_init_default();
 
   audio_buffer = (int16_t*)heap_caps_malloc(AUDIO_BUFFER_SIZE, MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
@@ -274,13 +249,13 @@ void audio_deinit() {
 }
 
 void audio_play_frame(uint8_t *data, uint32_t num_bytes) {
-  size_t bytes_written = 0;
-  auto err = ESP_OK;
-  err = i2s_channel_write(tx_handle, data, num_bytes, &bytes_written, 1000);
-  if(num_bytes != bytes_written) {
-    printf("ERROR to write %ld != written %d\n", num_bytes, bytes_written);
-  }
-  if (err != ESP_OK) {
-    printf("ERROR writing i2s channel: %d, '%s'\n", err, esp_err_to_name(err));
-  }
+  // size_t bytes_written = 0;
+  // auto err = ESP_OK;
+  // err = i2s_channel_write(tx_handle, data, num_bytes, &bytes_written, 1000);
+  // if(num_bytes != bytes_written) {
+  //   printf("ERROR to write %ld != written %d\n", num_bytes, bytes_written);
+  // }
+  // if (err != ESP_OK) {
+  //   printf("ERROR writing i2s channel: %d, '%s'\n", err, esp_err_to_name(err));
+  // }
 }

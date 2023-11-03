@@ -13,28 +13,28 @@
 #include <stdio.h>
 
 #include "i2c.hpp"
-#include "input.h"
+#include "badge_input.h"
 #include "i2s_audio.h"
-#include "spi_lcd.h"
+#include "i80_lcd.h"
 #include "format.hpp"
-#include "st7789.hpp"
 #include "task_monitor.hpp"
-
-#include "drv2605.hpp"
 
 #include "gbc_cart.hpp"
 #include "nes_cart.hpp"
 #include "heap_utils.hpp"
 #include "string_utils.hpp"
-#include "fs_init.hpp"
+#include "fs_init.h"
 #include "gui.hpp"
 #include "mmap.hpp"
 #include "rom_info.hpp"
 
-// from spi_lcd.cpp
+// from i80_lcd.cpp
+#include "display.hpp"
 extern std::shared_ptr<espp::Display> display;
 
 using namespace std::chrono_literals;
+
+#define GUI
 
 bool operator==(const InputState& lhs, const InputState& rhs) {
   return
@@ -58,7 +58,7 @@ std::unique_ptr<Cart> make_cart(const RomInfo& info) {
     return std::make_unique<GbcCart>(Cart::Config{
         .info = info,
         .display = display,
-        .verbosity = espp::Logger::Verbosity::WARN
+        .verbosity = espp::Logger::Verbosity::INFO
       });
     break;
   case Emulator::NES:
@@ -80,6 +80,7 @@ extern "C" void app_main(void) {
   // init filesystem
   fs_init();
   // init the display subsystem
+  fmt::print("Before framebuf, free (DMA):        {}\n", heap_caps_get_free_size(MALLOC_CAP_DMA));
   lcd_init();
   // initialize the i2c buses for touchpad, imu, audio codecs, gamepad, haptics, etc.
   i2c_init();
@@ -88,46 +89,27 @@ extern "C" void app_main(void) {
   // init the input subsystem
   init_input();
 
-  espp::Drv2605 haptic_motor(espp::Drv2605::Config{
-      .device_address = espp::Drv2605::DEFAULT_ADDRESS,
-      .write = i2c_write_external_bus,
-      .read = i2c_read_external_bus,
-      .motor_type = espp::Drv2605::MotorType::LRA
-    });
-  // we're using an LRA motor, so select th LRA library.
-  haptic_motor.select_library(6);
+  // discover roms in flash
+  auto roms = read_roms(MOUNT_POINT "/");
+  // for debugging/serial console, also discover saves
+  read_roms(SAVE_DIR "/");
 
-  auto play_haptic = [&haptic_motor]() {
-    haptic_motor.start();
-  };
-  auto set_waveform = [&haptic_motor](int waveform) {
-    haptic_motor.set_waveform(0, espp::Drv2605::Waveform::SOFT_BUMP);
-    haptic_motor.set_waveform(1, espp::Drv2605::Waveform::SOFT_FUZZ);
-    haptic_motor.set_waveform(2, (espp::Drv2605::Waveform)(waveform));
-    haptic_motor.set_waveform(3, espp::Drv2605::Waveform::END);
-  };
-
+#ifdef GUI
   fmt::print("initializing gui...\n");
   // initialize the gui
   Gui gui({
-      .play_haptic = play_haptic,
-      .set_waveform = set_waveform,
       .display = display,
-      .log_level = espp::Logger::Verbosity::WARN
+      .log_level = espp::Logger::Verbosity::DEBUG
     });
 
-  // the prefix for the filesystem (either littlefs or sdcard)
-  std::string fs_prefix = MOUNT_POINT;
-
-  // load the metadata.csv file, parse it, and add roms from it
-  auto roms = parse_metadata(fs_prefix + "/metadata.csv");
-  std::string boxart_prefix = fs_prefix + "/";
   for (auto& rom : roms) {
-    gui.add_rom(rom.name, boxart_prefix + rom.boxart_path);
+    gui.add_rom(rom.name);
   }
+#endif
 
   while (true) {
     // reset gui ready to play and user_quit
+#ifdef GUI
     gui.ready_to_play(false);
 
     struct InputState prev_state;
@@ -135,8 +117,6 @@ extern "C" void app_main(void) {
     get_input_state(&prev_state);
     get_input_state(&curr_state);
     while (!gui.ready_to_play()) {
-      // TODO: would be better to make this an actual LVGL input device instead
-      // of this..
       get_input_state(&curr_state);
       if (curr_state != prev_state) {
         prev_state = curr_state;
@@ -147,28 +127,34 @@ extern "C" void app_main(void) {
         } else if (curr_state.start) {
           // same as play button was pressed, just exit the loop!
           break;
+        } else if (curr_state.a) {
+          break;
         }
       }
       std::this_thread::sleep_for(50ms);
     }
 
-    // have broken out of the loop, let the user know we're processing...
-    haptic_motor.start();
-
     // Now pause the LVGL gui
     display->pause();
     gui.pause();
+#endif
 
     // ensure the display has been paused
     std::this_thread::sleep_for(100ms);
 
+#ifdef GUI
     auto selected_rom_index = gui.get_selected_rom_index();
+#else
+    // pretend we selected??
+    auto selected_rom_index = 0;
+#endif
     if (selected_rom_index < roms.size()) {
       fmt::print("Selected rom:\n");
       fmt::print("  index: {}\n", selected_rom_index);
       auto selected_rom_info = roms[selected_rom_index];
       fmt::print("  name:  {}\n", selected_rom_info.name);
       fmt::print("  path:  {}\n", selected_rom_info.rom_path);
+      display_clear();
 
       // Cart handles platform specific code, state management, etc.
       {
@@ -178,13 +164,6 @@ extern "C" void app_main(void) {
         fmt::print("Before emulation, free (8-bit):      {}\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         fmt::print("Before emulation, free (DMA):        {}\n", heap_caps_get_free_size(MALLOC_CAP_DMA));
         fmt::print("Before emulation, free (8-bit|DMA):  {}\n", heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_DMA));
-
-        // heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-        // heap_caps_print_heap_info(MALLOC_CAP_8BIT);
-        // heap_caps_print_heap_info(MALLOC_CAP_DMA);
-        // heap_caps_print_heap_info(MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
-        // heap_caps_check_integrity_all(true);
-        // heap_caps_dump_all();
 
         if (cart) {
           fmt::print("Running cart...\n");
@@ -203,11 +182,12 @@ extern "C" void app_main(void) {
 
     fmt::print("During emulation, minimum free heap: {}\n", heap_caps_get_minimum_free_size(MALLOC_CAP_DEFAULT));
 
-    // need to reset to control the whole screen
-    espp::St7789::clear(0,0,320,240);
-
+    // clear screen if required
+    display_clear();
+#ifdef GUI
     gui.resume();
     display->force_refresh();
     display->resume();
+#endif
   }
 }

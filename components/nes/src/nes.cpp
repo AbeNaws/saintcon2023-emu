@@ -10,7 +10,7 @@ static nes_t* console_nes;
 
 #include <string>
 
-#include "fs_init.hpp"
+#include "fs_init.h"
 #include "format.hpp"
 #include "spi_lcd.h"
 #include "st7789.hpp"

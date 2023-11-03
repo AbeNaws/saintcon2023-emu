@@ -38,9 +38,9 @@
 #include "../nofrendo/nes/nesstate.h"
 
 // from box-emu-hal
-#include "spi_lcd.h"
+#include "i80_lcd.h"
 #include "i2s_audio.h"
-#include "input.h"
+#include "badge_input.h"
 
 #define  DEFAULT_FRAGSIZE    AUDIO_BUFFER_SIZE
 

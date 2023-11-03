@@ -29,7 +29,7 @@
 #include <noftypes.h>
 #include <bitmap.h>
 
-#include "spi_lcd.h"
+#include "i80_lcd.h"
 #include "esp_heap_caps.h"
 
 void bmp_clear(const bitmap_t *bitmap, uint8 color)

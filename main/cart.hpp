@@ -5,13 +5,12 @@
 #include <mutex>
 
 #include "display.hpp"
-#include "fs_init.hpp"
-#include "spi_lcd.h"
-#include "input.h"
+#include "fs_init.h"
+#include "i80_lcd.h"
+#include "badge_input.h"
 #include "logger.hpp"
 #include "mmap.hpp"
 #include "rom_info.hpp"
-#include "st7789.hpp"
 #include "menu.hpp"
 
 /// This class is the base class for all carts.
@@ -35,7 +34,7 @@ public:
   /// \param config configuration for the cart
   Cart(const Config& config)
     : info_(config.info),
-      savedir_(FS_PREFIX + "/" + SAVE_DIR),
+      savedir_(SAVE_DIR),
       display_(config.display),
       logger_({.tag = "Cart", .level = config.verbosity}) {
     logger_.info("ctor");
@@ -50,10 +49,12 @@ public:
           .log_level = espp::Logger::Verbosity::WARN
           });
     // create the save directory if it doesn't exist
+#if CONFIG_ROM_STORAGE_SDCARD
     std::error_code ec;
     if (!std::filesystem::exists(savedir_, ec)) {
       std::filesystem::create_directory(savedir_, ec);
     }
+#endif
   }
 
   ~Cart() {
@@ -62,7 +63,7 @@ public:
   }
 
   std::string get_rom_filename() const {
-    return FS_PREFIX + "/" + info_.rom_path;
+    return info_.rom_path;
   }
 
   virtual void reset() {
@@ -149,7 +150,8 @@ public:
 
   virtual void init() {
     logger_.info("init");
-    espp::St7789::clear(0,0,320,240);
+    // TODO clear screen
+    //espp::St7789::clear(0,0,320,240);
     // copy the romdata
     rom_size_bytes_ = copy_romdata_to_cart_partition(get_rom_filename());
     romdata_ = get_mmapped_romdata();
@@ -163,9 +165,10 @@ public:
   virtual bool run() {
     running_ = true;
     // handle touchpad so we can know if the user presses the menu
-    uint8_t _num_touches, _btn_state;
-    uint16_t _x,_y;
-    touchpad_read(&_num_touches, &_x, &_y, &_btn_state);
+    uint8_t _btn_state;
+    //uint16_t _x,_y;
+    //touchpad_read(&_num_touches, &_x, &_y, &_btn_state);
+    _btn_state = 0;
     if (_btn_state) {
       logger_.warn("Menu pressed!");
       pre_menu();
@@ -182,7 +185,8 @@ public:
       }
       display_->pause();
       // make sure to clear the screen before we resume the game
-      espp::St7789::clear(0,0,320,240);
+      // TODO clear screen
+      //espp::St7789::clear(0,0,320,240);
       // only run the post_menu if we are still running
       if (running_)
         post_menu();
@@ -191,9 +195,6 @@ public:
   }
 
 protected:
-  static constexpr std::string FS_PREFIX = MOUNT_POINT;
-  static constexpr std::string SAVE_DIR = "/saves/";
-
   virtual void on_menu_action(Menu::Action action) {
     switch (action) {
     case Menu::Action::RESUME:

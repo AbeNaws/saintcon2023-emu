@@ -4,12 +4,12 @@
 
 #include <memory>
 
-#include "fs_init.hpp"
+#include "fs_init.h"
 
 #include "format.hpp"
-#include "spi_lcd.h"
+#include "i80_lcd.h"
 #include "i2s_audio.h"
-#include "input.h"
+#include "badge_input.h"
 #include "st7789.hpp"
 #include "task.hpp"
 
