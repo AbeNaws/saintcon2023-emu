@@ -1,0 +1,41 @@
+Stamp pin	ESP32 IO	Board I/O
+1	        GND     	GND
+2	        3V3     	3V3
+3	        EN      	
+4	        IO4     	I2C SDA
+5	        IO5     	I2C SCL
+6	        IO6     	I2C Reset
+7	        IO7     	LED 2812
+8	        IO15        D-pad up
+9	        IO16       	D-pad click
+10	        IO17       	D-pad left
+11	        IO18       	D-pad down
+12	        IO8     	D-pad right
+13	        IO19       	USB
+14	        IO20       	USB
+15	        IO3     	GND?
+16	        IO46       	Backlight
+17	        IO9     	Minibadge invert clock
+18	        IO10       	Minibadge clock
+19	        IO11       	Disp DB15
+20	        IO12       	Disp DB14
+21	        IO13       	Disp DB13
+22	        IO14       	Disp DB12
+23	        IO21       	Disp DB11
+24	        IO47       	Disp DB10
+25	        IO48       	Disp DB9
+26	        IO45       	Disp DB8
+27	        IO0     	NC
+28	        IO35       	Disp RESX
+29	        IO36       	Disp WRX
+30	        IO37       	Disp DCX
+31	        IO38       	Disp CSX
+32	        IO39       	B button
+33	        IO40       	A button
+34	        IO41       	Sound LRCK1
+35	        IO42       	Sound SCK1
+36	        RXD0       	Sound SDI1
+37	        TXD0        	
+38	        IO20        	
+39	        IO10        	
+40	        GND     	GND
