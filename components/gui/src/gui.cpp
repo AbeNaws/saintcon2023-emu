@@ -29,7 +29,7 @@ VideoSetting Gui::get_video_setting() {
   return (VideoSetting)(lv_dropdown_get_selected(ui_videosettingdropdown));
 }
 
-void Gui::add_rom(const std::string& name, const std::string& image_path) {
+void Gui::add_rom(const std::string& name) {
   // protect since this function is called from another thread context
   std::lock_guard<std::recursive_mutex> lk(mutex_);
   // make a new rom, which is a button with a label in it
@@ -51,7 +51,6 @@ void Gui::add_rom(const std::string& name, const std::string& image_path) {
   lv_obj_center(label);
   // and add it to our vector
   roms_.push_back(new_rom);
-  boxart_paths_.push_back(image_path);
   if (focused_rom_ == -1) {
     // if we don't have a focused rom, then focus this newly added rom!
     focus_rom(new_rom);
@@ -79,15 +78,6 @@ void Gui::focus_rom(lv_obj_t *new_focus, bool scroll_to_view) {
     lv_obj_scroll_to_view(new_focus, LV_ANIM_ON);
   }
 
-  // update the boxart
-  auto boxart_path = boxart_paths_[focused_rom_].c_str();
-  focused_boxart_ = make_boxart(boxart_path);
-  lv_img_set_src(ui_boxart, &focused_boxart_);
-}
-
-void Gui::update_haptic_waveform_label() {
-  auto haptic_label = fmt::format("{}", haptic_waveform_);
-  lv_label_set_text(ui_hapticlabel, haptic_label.c_str());
 }
 
 void Gui::deinit_ui() {
@@ -113,10 +103,6 @@ void Gui::init_ui() {
 
   lv_bar_set_value(ui_volumebar, get_audio_volume(), LV_ANIM_OFF);
 
-  // rom screen navigation
-  lv_obj_add_event_cb(ui_settingsbutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
-  lv_obj_add_event_cb(ui_playbutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
-
   // video settings
   lv_obj_add_event_cb(ui_videosettingdropdown, &Gui::event_callback, LV_EVENT_VALUE_CHANGED, static_cast<void*>(this));
 
@@ -125,12 +111,6 @@ void Gui::init_ui() {
   lv_obj_add_event_cb(ui_volumedownbutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
   lv_obj_add_event_cb(ui_mutebutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
 
-  // haptic settings
-  lv_obj_add_event_cb(ui_hapticdownbutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
-  lv_obj_add_event_cb(ui_hapticupbutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
-  lv_obj_add_event_cb(ui_hapticplaybutton, &Gui::event_callback, LV_EVENT_PRESSED, static_cast<void*>(this));
-  // ensure the waveform is set and the ui is updated
-  set_haptic_waveform(haptic_waveform_);
 }
 
 void Gui::load_rom_screen() {
@@ -151,12 +131,6 @@ void Gui::on_value_changed(lv_event_t *e) {
 void Gui::on_pressed(lv_event_t *e) {
   lv_obj_t * target = lv_event_get_target(e);
   logger_.info("PRESSED: {}", fmt::ptr(target));
-  // is it the settings button?
-  bool is_settings_button = (target == ui_settingsbutton);
-  if (is_settings_button) {
-    // TODO: DO SOMETHING HERE!
-    return;
-  }
   // volume controls
   bool is_volume_up_button = (target == ui_volumeupbutton);
   if (is_volume_up_button) {
@@ -171,28 +145,6 @@ void Gui::on_pressed(lv_event_t *e) {
   bool is_mute_button = (target == ui_mutebutton);
   if (is_mute_button) {
     toggle_mute();
-    return;
-  }
-  // haptic controls
-  bool is_haptic_up_button = (target == ui_hapticupbutton);
-  if (is_haptic_up_button) {
-    next_haptic_waveform();
-    return;
-  }
-  bool is_haptic_down_button = (target == ui_hapticdownbutton);
-  if (is_haptic_down_button) {
-    previous_haptic_waveform();
-    return;
-  }
-  bool is_hapticplay_button = (target == ui_hapticplaybutton);
-  if (is_hapticplay_button) {
-    play_haptic_();
-    return;
-  }
-  // or is it the play button?
-  bool is_play_button = (target == ui_playbutton);
-  if (is_play_button) {
-    ready_to_play_ = true;
     return;
   }
   // or is it one of the roms?

@@ -14,15 +14,10 @@ extern "C" {
 
 extern lv_obj_t *ui_romscreen;
 extern lv_obj_t *ui_header;
-void ui_event_settingsbutton( lv_event_t * e);
-extern lv_obj_t *ui_settingsbutton;
 extern lv_obj_t *ui_Screen1_Label2;
 extern lv_obj_t *ui_Screen1_Label1;
-extern lv_obj_t *ui_playbutton;
 extern lv_obj_t *ui_Screen1_Label3;
 extern lv_obj_t *ui_rompanel;
-extern lv_obj_t *ui_boxartpanel;
-extern lv_obj_t *ui_boxart;
 extern lv_obj_t *ui_settingsscreen;
 extern lv_obj_t *ui_header1;
 void ui_event_closebutton( lv_event_t * e);
