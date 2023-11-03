@@ -6,7 +6,7 @@
 static esp_vfs_littlefs_conf_t conf = {
   .base_path = MOUNT_POINT,
   .partition_label = "littlefs",
-  .format_if_mount_failed = true,
+  .format_if_mount_failed = false,
   .dont_mount = false,
 };
 

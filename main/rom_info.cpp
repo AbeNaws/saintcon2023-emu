@@ -1,60 +1,41 @@
 #include "rom_info.hpp"
+#include "dirent.h"
 
-std::vector<RomInfo> parse_metadata(const std::string& metadata_path) {
+std::vector<RomInfo> read_roms(const std::string& fs_path) {
   std::vector<RomInfo> infos;
-  // load metadata path
-  std::ifstream metadata(metadata_path, std::ios::in);
-  if (!metadata.is_open()) {
-    fmt::print("Couldn't load metadata file {}!\n", metadata_path);
+
+  DIR *dir = opendir(fs_path.c_str());
+  if (dir == NULL) {
+    fmt::print("Cannot open {}!\n", fs_path);
     return infos;
   }
-  // parse it as csv, format = rom_path, boxart_path, name - name is last
-  // because it might have commas in it.
-  std::string line;
-  while (std::getline(metadata, line)) {
-    // get the fields from each line
-    std::string rom_path, boxart_path, name;
-    char *str = line.data();
-    char *token = strtok(str, ",");
-    int num_tokens = 0;
-    while (token != NULL && num_tokens < 3) {
-      switch (num_tokens) {
-      case 0:
-        // rom path
-        rom_path = token;
-        rom_path = trim(rom_path);
-        break;
-      case 1:
-        // boxart path
-        boxart_path = token;
-        boxart_path = trim(boxart_path);
-        break;
-      case 2:
-        // name
-        name = token;
-        name = trim(name);
-        break;
-      default:
-        // DANGER WILL ROBINSON
-        break;
-      }
-      token = strtok(NULL, ",");
-      num_tokens++;
+
+  struct dirent *de;
+  while ((de = readdir(dir)) != NULL) {
+    if (de->d_name[0] == '.') {
+      // ignore hidden files
+      continue;
     }
-    fmt::print("INFO: '{}', '{}', '{}'\n", rom_path, boxart_path, name);
+
     Emulator platform = Emulator::UNKNOWN;
-    if (endsWith(rom_path, ".nes")) {
+    if (endsWith(de->d_name, ".nes")) {
       platform = Emulator::NES;
-    } else if (endsWith(rom_path, ".gb")) {
+    } else if (endsWith(de->d_name, ".gb")) {
       platform = Emulator::GAMEBOY;
-    } else if (endsWith(rom_path, ".gbc")) {
+    } else if (endsWith(de->d_name, ".gbc")) {
       platform = Emulator::GAMEBOY_COLOR;
+    } else if (endsWith(de->d_name, ".sav")) {
+      // do nothing except print we found a save
+      fmt::print("Found save '{}'\n", de->d_name);
     }
     if (platform != Emulator::UNKNOWN) {
+      char rom_path[32 + 10];
+      strcpy(rom_path, fs_path.c_str());
+      strcat(rom_path, de->d_name);
       // for each row, create rom entry
-      infos.emplace_back(name, boxart_path, rom_path, platform);
+      fmt::print("Found ROM '{}' '{}'\n", de->d_name, rom_path);
+      infos.emplace_back(std::string(de->d_name), std::string(rom_path), platform);
     }
   }
-
   return infos;
 }

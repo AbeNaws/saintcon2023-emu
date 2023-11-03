@@ -11,9 +11,8 @@ enum class Emulator { UNKNOWN, NES, GAMEBOY, GAMEBOY_COLOR, SEGA_MASTER_SYSTEM, 
 
 struct RomInfo {
   std::string name;
-  std::string boxart_path;
   std::string rom_path;
   Emulator platform;
 };
 
-std::vector<RomInfo> parse_metadata(const std::string& metadata_path);
+std::vector<RomInfo> read_roms(const std::string& fs_path);
