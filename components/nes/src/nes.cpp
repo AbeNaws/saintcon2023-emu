@@ -9,14 +9,14 @@ extern "C" {
 static nes_t* console_nes;
 
 #include <string>
+#include <thread>
 
 #include "fs_init.h"
 #include "format.hpp"
-#include "spi_lcd.h"
-#include "st7789.hpp"
+#include "i80_lcd.h"
 
-static std::atomic<bool> scaled = false;
-static std::atomic<bool> filled = true;
+static bool scaled = false;
+static bool filled = true;
 
 void set_nes_video_original() {
   scaled = false;
