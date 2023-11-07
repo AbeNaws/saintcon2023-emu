@@ -24,13 +24,13 @@ static std::shared_ptr<QwiicNes> qwiicnes;
 
 #if USE_QWIICNES
 void qwiicnes_write(uint8_t reg_addr, uint8_t value) {
-  uint8_t write_buf[] = {reg_addr, value};
-  i2c_write_external_bus(QwiicNes::ADDRESS, write_buf, 2);
+  uint8_t write_buf = value;
+  i2c_write_reg(QwiicNes::ADDRESS, reg_addr, &write_buf, 1);
 }
 
 uint8_t qwiicnes_read(uint8_t reg_addr) {
   uint8_t data;
-  i2c_read_external_bus(QwiicNes::ADDRESS, reg_addr, &data, 1);
+  i2c_read_reg(QwiicNes::ADDRESS, reg_addr, &data, 1);
   return data;
 }
 #endif // else !USE_QWIICNES

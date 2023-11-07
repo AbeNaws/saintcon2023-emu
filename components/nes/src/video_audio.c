@@ -142,6 +142,7 @@ viddriver_t sdlDriver =
 #define NES_GAME_WIDTH (256)
 #define NES_GAME_HEIGHT (224) /* NES_VISIBLE_HEIGHT */
 
+static bool special_func_ready = true;
 static bool scale_video = false;
 static bool prev_scale_video = false;
 void osd_set_video_scale(bool new_video_scale) {
@@ -366,6 +367,27 @@ static int ConvertJoystickInput()
 
     static struct InputState state;
     get_input_state(&state);
+    if(state.a && state.b) {
+        if(special_func_ready && state.up) {
+            special_func_ready = false;
+            set_audio_volume(get_audio_volume() + 10);
+            return 0b0110000011111001;
+        } else if(special_func_ready && state.down) {
+            special_func_ready = false;
+            set_audio_volume(get_audio_volume() - 10);
+            return 0b0110000011111001;
+        } else if(special_func_ready && state.start) {
+            special_func_ready = false;
+            state.select = 1;
+            state.a = 0;
+            state.b = 0;
+        } else if(!(state.up || state.down || state.start)) {
+            special_func_ready = true;
+        } else {
+            // best guess for no buttons pressed
+            return 0b0110000011111001;
+        }
+    }
 
 	if (!state.a)
 		result |= (1<<13);

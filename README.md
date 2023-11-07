@@ -13,7 +13,7 @@ This uses the [esp-box-emu project](https://github.com/esp-cpp/esp-box-emu) as a
 
 ## Building
 
-You will need ESP-IDF 5.0 or newer to build this project.
+You will need ESP-IDF 5.0 or newer to build this project. 5.0 and 5.1 have been tested.
 
 1. Install [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/)
 2. Load the ESP-IDF toolchain: `. <esp-idf installation>/source.sh`
@@ -24,7 +24,15 @@ You will need ESP-IDF 5.0 or newer to build this project.
 7. Connect your badge and flash it: `idf.py flash`
 8. Enjoy!
 
-The D-pad click is mapped to the start button. There is no select button mapped at this time.
+## User guide
+
+Turn on your badge, select a game loaded into flash with the D-pad, click A (rightmost button) and enjoy!
+
+The D-pad click is mapped to the Start button.
+Holding down A+B (right buttons) and pressing another button allows for special commands:
+- A+B + Start: Select
+- A+B + up: Increase volume
+- A+B + down: Decrease volume
 
 ## Development
 
@@ -37,8 +45,8 @@ Badge pins have been reversed engineered and documented in `pinouts.txt`.
 - Saves for GB/GBC games may not work consistently. The current method is to copy SRAM (aka External RAM) to a LittleFS save partition whenever SRAM writes are disabled and bank 1+ of SRAM has writes. I have tested saves on one or two games but your mileage may vary.
 
 ### TODO
-- [ ] Sound
-- [ ] NES support
+- [X] Sound
+- [X] NES support
 - [ ] More expansive GB/GBC save testing
 - [ ] 2MB ROM support
 - [ ] Savestates

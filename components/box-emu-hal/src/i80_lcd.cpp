@@ -61,10 +61,11 @@ static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t 
 }
 
 void display_clear() {
-    // TODO make this work properly
-    static uint16_t color_data[max_transfer_size / 8];
-    memset(color_data, 0x0000, max_transfer_size / 8 * sizeof(uint16_t));
-    esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES, (lv_color_t*)color_data);
+    static uint16_t color_data[max_transfer_size / 16];
+    memset(color_data, 0x0000, max_transfer_size / 16 * sizeof(uint16_t));
+    // needs 2 draws to blank for some reason?
+    esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, LCD_H_RES, LCD_V_RES - 100, (lv_color_t*)color_data);
+    esp_lcd_panel_draw_bitmap(panel_handle, 0, 100, LCD_H_RES, LCD_V_RES, (lv_color_t*)color_data);
 }
 
 extern "C" uint16_t make_color(uint8_t r, uint8_t g, uint8_t b) {

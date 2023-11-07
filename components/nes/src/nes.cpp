@@ -66,7 +66,8 @@ void run_nes_rom() {
   nes_emulateframe(first_frame);
   first_frame = 0;
   // frame rate should be 60 FPS, so 1/60th second is what we want to sleep for
-  auto delay = std::chrono::duration<float>(1.0f/60.0f);
+  // note: 1/60 negatively affects sound, try 1/128
+  auto delay = std::chrono::duration<float>(1.0f/128.0f);
   std::this_thread::sleep_until(start + delay);
 }
 

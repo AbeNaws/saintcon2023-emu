@@ -58,6 +58,7 @@ static QueueHandle_t video_queue;
 static float totalElapsedSeconds = 0;
 static struct InputState state;
 
+static std::atomic<bool> special_func_ready = false;
 static std::atomic<bool> scaled = false;
 static std::atomic<bool> filled = false;
 bool video_task(std::mutex &m, std::condition_variable& cv) {
@@ -181,7 +182,8 @@ bool run_to_vblank(std::mutex &m, std::condition_variable& cv) {
     fmt::print("gameboy: FPS {}\n", (float) frame / totalElapsedSeconds);
   }
   // frame rate should be 60 FPS, so 1/60th second is what we want to sleep for
-  static constexpr auto delay = std::chrono::duration<float>(1.0f/60.0f);
+  // note: 1/60 negatively affects sound, try 1/128
+  static constexpr auto delay = std::chrono::duration<float>(1.0f/128.0f);
   std::this_thread::sleep_until(start + delay);
   return false;
 }
@@ -264,6 +266,27 @@ void init_gameboy(const std::string& rom_filename, uint8_t *romdata, size_t rom_
 void run_gameboy_rom() {
   // GET INPUT
   get_input_state(&state);
+  // check buttons for select button/audio changes (no touchscreen) - don't pass to game
+  if(state.a && state.b) {
+    if(special_func_ready && state.up) {
+      special_func_ready = false;
+      set_audio_volume(get_audio_volume() + 10);
+      return;
+    } else if(special_func_ready && state.down) {
+      special_func_ready = false;
+      set_audio_volume(get_audio_volume() - 10);
+      return;
+    } else if(special_func_ready && state.start) {
+      special_func_ready = false;
+      state.select = 1;
+      state.a = 0;
+      state.b = 0;
+    } else if(!(state.up || state.down || state.start)) {
+      special_func_ready = true;
+    } else {
+      return;
+    }
+  }
   pad_set(PAD_UP, state.up);
   pad_set(PAD_DOWN, state.down);
   pad_set(PAD_LEFT, state.left);
