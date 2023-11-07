@@ -44,17 +44,12 @@ public:
         .stack_size_bytes = 6 * 1024
       });
     task_->start();
-    // register events
-    espp::EventManager::get().add_subscriber(mute_button_topic,
-                                             "menu",
-                                             std::bind(&Menu::on_mute_button_pressed, this, _1));
     logger_.info("Menu created");
   }
 
   ~Menu() {
     task_->stop();
     deinit_ui();
-    espp::EventManager::get().remove_subscriber(mute_button_topic, "gui");
   }
 
   size_t get_selected_slot() const {

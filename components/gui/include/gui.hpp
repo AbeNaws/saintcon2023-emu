@@ -33,16 +33,11 @@ public:
         .stack_size_bytes = 6 * 1024
       });
     task_->start();
-    // register events
-    // espp::EventManager::get().add_subscriber(mute_button_topic,
-    //                                          "gui",
-    //                                          std::bind(&Gui::on_mute_button_pressed, this, _1));
   }
 
   ~Gui() {
     task_->stop();
     deinit_ui();
-    //espp::EventManager::get().remove_subscriber(mute_button_topic, "gui");
   }
 
   void ready_to_play(bool new_state) {
