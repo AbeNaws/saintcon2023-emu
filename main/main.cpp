@@ -3,8 +3,8 @@
 
 #include "sdkconfig.h"
 
-#include "FreeRTOS/FreeRTOS.h"
-#include "FreeRTOS/queue.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 #include <chrono>
 #include <memory>

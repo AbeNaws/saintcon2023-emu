@@ -1,0 +1,5 @@
+cd ~/esp/esp-idf 
+. ./export.sh
+cd ~/Documents/saintconGB/saintcon2023-emu
+idf.py -p /dev/ttyACM0 flash 
+##add games to flash_data
